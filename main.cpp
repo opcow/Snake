@@ -46,7 +46,7 @@ SDL_Surface * map_tex[types_end];
 SDL_Surface * snake_tex[6];
 
 CSnakeMap * theMap;
-//
+
 //// testing text ////
 TTF_Font *font;
 SDL_Surface *text_surface;
