@@ -1,5 +1,5 @@
 // Tile.cpp
-//
+
 #include "Tile.h"
 
 CTile::CTile(SDL_Surface * texture, SDL_Surface * surface)

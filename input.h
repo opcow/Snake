@@ -1,5 +1,5 @@
 // input.h
-
+//
 #define NODIR 0
 #define LEFT 1
 #define RIGHT 2

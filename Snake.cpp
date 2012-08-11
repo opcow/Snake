@@ -1,5 +1,5 @@
 // Snake.cpp
-//
+
 #include "Snake.h"
 
 CSnake::CSnake(int x, int y, int texture, SDL_Surface * surface, SDL_Surface * textures[])

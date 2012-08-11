@@ -1,5 +1,5 @@
 #include "SnakeMap.h"
-////
+
 
 CSnakeMap::CSnakeMap(int width, int height, SDL_Surface * surface)
 {
