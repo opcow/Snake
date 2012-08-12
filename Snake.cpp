@@ -52,7 +52,7 @@ void CSnake::MoveX(int d)
     else
         Erase();
     mX += d;
-    mT = d == 1 ? 0 : 1;
+    mT = d == 1 ? 1 : 3;
     Draw();
 }
 
@@ -63,7 +63,7 @@ void CSnake::MoveY(int d)
     else
         Erase();
     mY += d;
-    mT = d == 1 ? 3 : 2;
+    mT = d == 1 ? 2 : 0;
    Draw();
 }
 

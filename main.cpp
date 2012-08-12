@@ -14,15 +14,18 @@
 const int scrWidth = 1024, scrHeight = 768;
 const int mapSurfaceW = 768, mapSurfaceH = 768;
 const int infoSurfaceW = 256, infoSurfaceH = 768;
-int tileSz = 16;
+
+//int tileSz = 16;
 int tileW, tileH;
-int mapWidth = mapSurfaceW / tileSz, mapHeight = mapSurfaceH / tileSz;
+int mapWidth = 0, mapHeight = 0;
 
-#define SB_LEFT
+#define SB_LEFTZS
 
-#ifdef SB_LEFT
+#ifdef SB_LEFTZS
 SDL_Rect mapRect = { 0, 0, 768, 768 };
-SDL_Rect sbRect = {768, 0, 256, 768 };
+SDL_Rect infoRect = { 768, 0, 256, 768 };
+SDL_Rect titleRect = { 768, 0, 0, 0 };
+SDL_Rect digitRect = { 0, 0, 0, 0 };
 #else
 SDL_Rect mapRect = { 256, 0, 768, 768 };
 SDL_Rect sbRect = { 0, 0, 256, 768 };
@@ -32,6 +35,7 @@ SDL_Surface * screen = NULL;
 SDL_Surface * map_surface = NULL;
 SDL_Surface * map_overlay = NULL;
 SDL_Surface * info_surface = NULL;
+SDL_Surface * title_surface = NULL;
 SDL_Surface * message = NULL;
 
 int * foo = new int;
@@ -44,6 +48,7 @@ enum {
 
 SDL_Surface * map_tex[types_end];
 SDL_Surface * snake_tex[6];
+SDL_Surface * digit_tex[10];
 
 CSnakeMap * theMap;
 
@@ -55,23 +60,28 @@ SDL_Rect textr = { 32, 200, 256, 100 };
 SDL_Color textcolor = {255,0,0};
 //// testing text ////
 
+char filename[_MAX_PATH];
+
+int score;
+
 void cleanup();
 
-void error()
+void error(char * msg)
 {
-    MessageBox(0, "Foo", "Error", 0);
+    MessageBox(0, msg, "Error", 0);
     cleanup();
     SDL_Quit();
     exit(-1);
 }
 
-void load_image(char * fn, SDL_Surface ** s)
+bool load_image(char * fn, SDL_Surface ** s)
 {
     SDL_Surface * loadedImage;
     if ( 0 == (loadedImage = SDL_LoadBMP(fn)))
-        error();
+        return false;;
     *s = SDL_DisplayFormat(loadedImage);
     SDL_FreeSurface(loadedImage);
+    return true;
 }
 
 void init()
@@ -94,21 +104,26 @@ void init()
     //draw the map items here
     if (0 == (map_surface = SDL_CreateRGBSurface(SDL_SWSURFACE, mapSurfaceW,
         mapSurfaceH, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)))
-        error();
-    SDL_FillRect(map_surface, &mapRect, 0xff000000);
+        error("Couldn't create map surface.");
+    SDL_FillRect(map_surface, 0, 0xff000000);
 
     if (0 == (info_surface = SDL_CreateRGBSurface(SDL_SWSURFACE, infoSurfaceW,
         infoSurfaceH, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)))
-        error();
-    SDL_FillRect(map_surface, &sbRect, 0xff000000);
+        error("Couldn't create info surface.");
+    SDL_FillRect(info_surface, 0, 0xff000000);
 
 //    if (0 == (map_overlay = SDL_CreateRGBSurface(SDL_SWSURFACE, mapSurfaceW,
 //        mapSurfaceH, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)))
 //        error();
 
 
-    load_image("media/images/title.bmp", &info_surface);
-    load_image("media/images/go.bmp", &message);
+    if (!load_image("media/images/title.bmp", &title_surface))
+        error("Error loading images.");
+    titleRect.w = title_surface->w;
+    titleRect.h = title_surface->h;
+    SDL_BlitSurface(title_surface, NULL, info_surface, 0);
+    if(!load_image("media/images/go.bmp", &message))
+        error("Error loading images.");
 }
 
 void init_items()
@@ -116,8 +131,10 @@ void init_items()
     Uint32 colors[types_end] = { 0xffff0000, 0xff8bcffa, 0xffa54607 };
     Uint32 * pixels;
 
-    load_image("media/images/food.bmp", &map_tex[food]);
-    load_image("media/images/wall.bmp", &map_tex[wall]);
+    if (!load_image("media/images/034.bmp", &map_tex[food]))
+        error("Error loading images.");
+    if(!load_image("media/images/033.bmp", &map_tex[wall]))
+        error("Error loading images.");
 
     tileW = map_tex[wall]->w;
     tileH = map_tex[wall]->h;
@@ -134,13 +151,26 @@ void init_items()
 
 void init_snake()
 {
-    load_image("media/images/headr.bmp", &snake_tex[0]);
-    load_image("media/images/headl.bmp", &snake_tex[1]);
-    load_image("media/images/headu.bmp", &snake_tex[2]);
-    load_image("media/images/headd.bmp", &snake_tex[3]);
-    load_image("media/images/body.bmp", &snake_tex[4]);
+    for (int i = 0; i < 5; i++)
+    {
+        sprintf(filename, "media/images/%03d.bmp", i + 10);
+        if (!load_image(filename, &snake_tex[i]))
+            error("Error loading images.");
+    }
 }
 
+void init_score()
+{
+    for (int i = 0; i < 10; i++)
+    {
+        sprintf(filename, "media/images/%03d.bmp", i);
+        if(!load_image(filename, &digit_tex[i]))
+            error("Error loading images.");
+    }
+    digitRect.y = 80;
+    digitRect.w = digit_tex[0]->w;
+    digitRect.h = digit_tex[0]->h;
+}
 
 void cleanup()
 {
@@ -216,11 +246,38 @@ void draw_screen()
 {
 
     SDL_BlitSurface(map_surface, NULL, screen, &mapRect);
-    SDL_BlitSurface(info_surface, NULL, screen, &sbRect);
+    //SDL_FillRect(info_surface, 0, 0xffff0000);
+    //SDL_FillRect(score_surface, 0, 0xff00ff00);
+    //SDL_BlitSurface(score_surface, NULL, info_surface, &scoreRect);
+    SDL_BlitSurface(info_surface, NULL, screen, &infoRect);
 
     //SDL_BlitSurface(map_overlay, NULL, screen, 0);
     draw_debug();
     SDL_Flip(screen);
+}
+
+void print_score()
+{
+    int d, i;
+    int num = score;
+
+    digitRect.x = 252;
+    i = 5;
+    do
+    {
+        d = num % 10;
+        digitRect.x -= digitRect.w;
+        SDL_BlitSurface( digit_tex[d], NULL, info_surface, &digitRect );
+        num /= 10;
+        i--;
+    } while (num > 0);
+
+    while (i >= 0)
+    {
+        digitRect.x -= digitRect.w;
+        SDL_BlitSurface( digit_tex[0], NULL, info_surface, &digitRect );
+        i--;
+    }
 }
 
 void spawn_random(CSnakeMap * m, CSnake * s, unsigned char i)
@@ -367,6 +424,8 @@ bool checkMap(CSnake * s)
         theMap->AddItem(x, y, 0);
         s->Grow();
         spawn_random(theMap, s, food);
+        score += 10;
+        print_score();
         return true;
         break;
     default:
@@ -384,10 +443,13 @@ int main( int argc, char* args[] )
     Uint32 delay = 10;
     bool bQuit = false;
 
+    score = 0;
+
     srand((unsigned)time( NULL ));
     init();
     init_items();
     init_snake();
+    init_score();
 
     theMap = new CSnakeMap(mapWidth, mapHeight, map_surface);
     theMap->AddTiles(map_tex, types_end);
@@ -403,6 +465,7 @@ int main( int argc, char* args[] )
     place_food(theMap, 1);
     theMap->Draw();
 
+    print_score();
     draw_screen();
 
     while (!quitcheck())
