@@ -25,3 +25,6 @@
 *.cache
 *.psd
 *.vcx*
+/.vs
+/Snek/x64/Debug
+/x64/Debug

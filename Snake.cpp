@@ -105,7 +105,7 @@ void CSnake::Erase()
 {
     mRect.x = mX * mRect.w;
     mRect.y = mY * mRect.h;
-    SDL_FillRect(mSurface, &mRect, 0xff000000);
+    SDL_FillSurfaceRect(mSurface, &mRect, 0xff000000);
 }
 
 bool CSnake::CheckCollision(int x, int y)

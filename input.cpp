@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include "input.h"
 
 #define LKEY 0X00000002
@@ -16,16 +16,16 @@ int getInput()
 
     static Uint32 keyMap = 0;
 
-    Uint8 *keystate = SDL_GetKeyState(NULL);
-    if (keystate[SDLK_q])
+    const bool *keystate = SDL_GetKeyboardState(NULL);
+    if (keystate[SDL_SCANCODE_Q])
         return QUIT;
 
-    // check to see if a key has been released since it was last read as
-    // pressed the point is to keep track of the last key pressed. that key
-    // rules should make for less rage inducement from pressing on key before
+    // check to see if a key has been released since it was last read as pressed.
+    // the point is to keep track of the last key pressed. that key
+    // rule should make for less rage inducement from pressing one key before
     // releasing another when tring to make a quick turn
 
-    if (keystate[SDLK_LEFT] || keystate[SDLK_a])
+    if (keystate[SDL_SCANCODE_LEFT] || keystate[SDL_SCANCODE_A])
     {
         if((keyMap & LKEY) == 0)
         {
@@ -36,7 +36,7 @@ int getInput()
     else if((keyMap & LKEY) != 0)
             keyMap = 0;
 
-    if (keystate[SDLK_RIGHT] || keystate[SDLK_d])
+    if (keystate[SDL_SCANCODE_RIGHT] || keystate[SDL_SCANCODE_D])
     {
         if((keyMap & RKEY) == 0)
         {
@@ -47,7 +47,7 @@ int getInput()
     else if((keyMap & RKEY) != 0)
             keyMap = 0;
 
-    if (keystate[SDLK_UP] || keystate[SDLK_w])
+    if (keystate[SDL_SCANCODE_UP] || keystate[SDL_SCANCODE_W])
     {
         if((keyMap & UKEY) == 0)
         {
@@ -58,7 +58,7 @@ int getInput()
     else if((keyMap & UKEY) != 0)
             keyMap = 0;
 
-    if (keystate[SDLK_DOWN] || keystate[SDLK_s])
+    if (keystate[SDL_SCANCODE_DOWN] || keystate[SDL_SCANCODE_S])
     {
         if((keyMap & DKEY) == 0)
         {
@@ -79,8 +79,7 @@ bool quitcheck()
     static int dirx = 0, diry = 0;
 
     switch( event.type ){
-         /* SDL_QUIT event (window close) */
-    case SDL_QUIT:
+    case SDL_EVENT_QUIT:
         return true;
         break;
     }

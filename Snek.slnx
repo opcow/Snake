@@ -1,0 +1,8 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/" />
+  <Project Path="Snek.vcxproj" Id="83ce9af4-7f60-486c-924d-854d10e03b2a" />
+</Solution>
