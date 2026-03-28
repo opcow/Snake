@@ -24,13 +24,12 @@ int mapWidth = 0, mapHeight = 0;
 
 #ifdef SB_LEFTZS
 SDL_Rect mapRect = { 0, 0, 768, 768 };
+#else
+SDL_Rect mapRect = { 256, 0, 768, 768 };
+#endif
 SDL_Rect infoRect = { 768, 0, 256, 768 };
 SDL_Rect titleRect = { 768, 0, 0, 0 };
 SDL_Rect digitRect = { 0, 0, 0, 0 };
-#else
-SDL_Rect mapRect = { 256, 0, 768, 768 };
-SDL_Rect sbRect = { 0, 0, 256, 768 };
-#endif
 
 // SDL3: window + renderer own the display; surfaces are composed CPU-side
 // and uploaded to a streaming texture each frame.
@@ -53,7 +52,7 @@ enum {
 } ;
 
 SDL_Surface * map_tex[types_end];
-SDL_Surface * snake_tex[6];
+SDL_Surface * snake_tex[32];
 SDL_Surface * digit_tex[10];
 
 CSnakeMap * theMap;
@@ -77,12 +76,18 @@ static void error(const char * msg)
     exit(-1);
 }
 
-bool load_image(const char * fn, SDL_Surface ** s)
+bool load_image(const char* fn, SDL_Surface** s)
 {
-    // SDL3 removed SDL_DisplayFormat; just use the loaded surface directly.
     *s = SDL_LoadBMP(fn);
     return (*s != NULL);
 }
+
+bool load_image_p(const char* fn, SDL_Surface** s)
+{
+    *s = SDL_LoadPNG(fn);
+    return (*s != NULL);
+}
+
 
 void init()
 {
@@ -143,10 +148,10 @@ void init_items()
 
 void init_snake()
 {
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 14; i++)
     {
-        sprintf_s(filename, "media/images/%03d.bmp", i + 10);
-        if (!load_image(filename, &snake_tex[i]))
+        sprintf_s(filename, "media/images/%03d.png", i + 10);
+        if (!load_image_p(filename, &snake_tex[i]))
             error("Error loading images.");
     }
 }
@@ -278,70 +283,70 @@ void spawn_random(CSnakeMap * m, CSnake * s, unsigned char i)
     m->Draw(x, y);
 }
 
-void xdo_move(CSnake * s, int dir)
-{
-    static Uint64 old_ticks = 0;
-    Uint64 new_ticks;
-    Uint64 delta = 100;
-    static Uint64 delay = 300;
-    static int oldDir = NODIR;
-
-    new_ticks = SDL_GetTicks();
-    delta = new_ticks - old_ticks;
-
-    if (delta >= delay)
-    {
-        if (delay > 150)
-            delay -= 25;
-        old_ticks = new_ticks;
-        switch (dir)
-        {
-        case LEFT:
-            if (oldDir != RIGHT)
-            {
-                s->MoveX(-1);
-                oldDir = dir;
-            }
-            else
-                s->MoveX(1);
-            break;
-        case RIGHT:
-            if (oldDir != LEFT)
-            {
-                s->MoveX(1);
-                oldDir = dir;
-            }
-            else
-                s->MoveX(-1);
-            break;
-        case UP:
-            if (oldDir != DOWN)
-            {
-                s->MoveY(-1);
-                oldDir = dir;
-            }
-            else
-                s->MoveY(1);
-            break;
-        case DOWN:
-            if (oldDir != UP)
-            {
-                s->MoveY(1);
-                oldDir = dir;
-            }
-            else
-                s->MoveY(-1);
-            break;
-        }
-    }
-}
+//void xdo_move(CSnake * s, int dir)
+//{
+//    static Uint64 old_ticks = 0;
+//    Uint64 new_ticks;
+//    Uint64 delta = 100;
+//    static Uint64 delay = 600;
+//    static int oldDir = NODIR;
+//
+//    new_ticks = SDL_GetTicks();
+//    delta = new_ticks - old_ticks;
+//
+//    if (delta >= delay)
+//    {
+//        if (delay > 150)
+//            delay -= 25;
+//        old_ticks = new_ticks;
+//        switch (dir)
+//        {
+//        case LEFT:
+//            if (oldDir != RIGHT)
+//            {
+//                s->MoveX(-1);
+//                oldDir = dir;
+//            }
+//            else
+//                s->MoveX(1);
+//            break;
+//        case RIGHT:
+//            if (oldDir != LEFT)
+//            {
+//                s->MoveX(1);
+//                oldDir = dir;
+//            }
+//            else
+//                s->MoveX(-1);
+//            break;
+//        case UP:
+//            if (oldDir != DOWN)
+//            {
+//                s->MoveY(-1);
+//                oldDir = dir;
+//            }
+//            else
+//                s->MoveY(1);
+//            break;
+//        case DOWN:
+//            if (oldDir != UP)
+//            {
+//                s->MoveY(1);
+//                oldDir = dir;
+//            }
+//            else
+//                s->MoveY(-1);
+//            break;
+//        }
+//    }
+//}
 
 void do_move(CSnake * s, int dir)
 {
     static Uint64 old_ticks = 0;
     Uint64 new_ticks;
     Uint64 delta = 100;
-    static Uint64 delay = 300;
+    static Uint64 delay = 320;
     static int oldDir = NODIR;
     int directions[] = { 0, -1, 1, -1, 1 };
 
@@ -352,38 +357,40 @@ void do_move(CSnake * s, int dir)
     new_ticks = SDL_GetTicks();
     delta = new_ticks - old_ticks;
 
-    if (delta >= delay)
+
+    if (dir == LEFT || dir == RIGHT)
+        md = mx;
+    else
+        md = my;
+
+    if (delta < delay)
+        return;
+
+    old_ticks = new_ticks;
+    //if (delay > 150)
+    //    delay -= 25;
+
+
+    switch (dir)
     {
-        old_ticks = new_ticks;
-        if (delay > 150)
-            delay -= 25;
-
-        if (dir == LEFT || dir == RIGHT)
-            md = mx;
-        else
-            md = my;
-
-        switch (dir)
-        {
-        case LEFT:
-            if (oldDir != RIGHT)
-                oldDir = LEFT;
-            break;
-        case RIGHT:
-            if (oldDir != LEFT)
-                oldDir = RIGHT;
-            break;
-        case UP:
-            if (oldDir != DOWN)
-                oldDir = UP;
-            break;
-        case DOWN:
-            if (oldDir != UP)
-                oldDir = DOWN;
-            break;
-        }
-        (s->*md)(directions[oldDir]);
+    case LEFT:
+        if (oldDir != RIGHT)
+            oldDir = LEFT;
+        break;
+    case RIGHT:
+        if (oldDir != LEFT)
+            oldDir = RIGHT;
+        break;
+    case UP:
+        if (oldDir != DOWN)
+            oldDir = UP;
+        break;
+    case DOWN:
+        if (oldDir != UP)
+            oldDir = DOWN;
+        break;
     }
+    (s->*md)(directions[oldDir]);
 }
 
 bool checkMap(CSnake * s)
@@ -435,17 +442,20 @@ int main( int argc, char* args[] )
 
     init_map(theMap);
 
-    snake = new CSnake(mapWidth / 2, mapHeight / 2, 0, map_surface, snake_tex);
+    snake = new CSnake(mapWidth / 2, mapHeight / 2, nullptr, map_surface, snake_tex);
     snake->Grow(-1, 0);
     snake->Grow(-1, 0);
-    snake->Draw();
-    do_move(snake, RIGHT);
-
+    snake->Grow(-1, 0);
+    snake->Grow(-1, 0);
+    snake->Grow(-1, 0);
     place_food(theMap, 1);
     theMap->Draw();
-
     print_score();
+    snake->Draw();
     draw_screen();
+    SDL_Delay(2000);
+
+    do_move(snake, RIGHT);
 
     while (!quitcheck())
     {
