@@ -6,8 +6,8 @@ CTile::CTile(SDL_Surface * texture, SDL_Surface * surface)
 {
     mRect.x = 0;
     mRect.y = 0;
-    mRect.w = 16;
-    mRect.h = 16;
+    mRect.w = 32;
+    mRect.h = 32;
     mTexture = texture;
     mSurface = surface;
 };
